@@ -27,6 +27,13 @@ function latestRelease(root: string) {
 
 /** Brings this copy up to date. `to` is the release it's now at, if it follows releases. */
 export function updateCode(root: string) {
+  // 2026-11-06 出站管控：默认禁止联网升级。扫描环境要求「杜绝外链」，
+  // 需要升级时显式设 AGENT_AUTOLOOP_ALLOW_UPDATE=1，或手动在本地克隆里 git pull。
+  if (process.env.AGENT_AUTOLOOP_ALLOW_UPDATE !== "1") {
+    throw new Error(
+      "升级已禁用（AGENT_AUTOLOOP_ALLOW_UPDATE≠1）：本项目禁止外链。请在本地克隆里 git pull 后重新安装，或显式放行升级。",
+    );
+  }
   const before = git(root, "rev-parse", "HEAD");
   const to = latestRelease(root);
   if (to) {

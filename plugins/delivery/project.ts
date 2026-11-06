@@ -41,9 +41,14 @@ export function settings(value: any, testLocalHealth = false): Settings {
   if (value.check?.job !== undefined && (typeof value.check.job !== "string" || !value.check.job)) bad();
   if (health) {
     const url = new URL(health.url);
+    // 出站白名单（本文件会被复制进项目，故不 import 外部模块）：
+    // 默认只允许回环主机，避免交付流程向任意 https 地址发请求。
+    const allowed = (process.env.AGENT_AUTOLOOP_ALLOW_HOSTS ?? "127.0.0.1,localhost,::1")
+      .split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
     const secure =
-      url.protocol === "https:" || (testLocalHealth && url.protocol === "http:" && url.hostname === "127.0.0.1");
-    if (!secure || url.username || url.password) bad();
+      url.protocol === "https:" || (testLocalHealth && url.protocol === "http:" && host === "127.0.0.1");
+    if (!secure || url.username || url.password || !allowed.includes(host)) bad();
     if (typeof health.field !== "string" || typeof health.pattern !== "string") bad();
     if (!/\(\?(?:P)?<sha>/.test(health.pattern)) bad();
     new RegExp(jsPattern(health.pattern));

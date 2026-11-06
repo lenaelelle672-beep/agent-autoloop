@@ -3,6 +3,7 @@
 //   "channels": { "dingtalk": { "use": "webhook", "key": "…", "url": "https://…",
 //                               "body": { "msgtype": "text", "text": { "content": "{text}" } } } }
 import { accepted, payload } from "./templates.ts";
+import { assertAllowed } from "../egress.ts";
 import type { Card, ChannelContext } from "../../host/channels.ts";
 
 function fill(template: unknown, text: string): unknown {
@@ -37,7 +38,8 @@ export default async function webhook({ hub, options, log, signal }: ChannelCont
       continue;
     }
     try {
-      const response = await fetch(options.url as string, {
+      const target = assertAllowed(String(options.url));  // 出站白名单：默认只允许回环
+      const response = await fetch(target, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(
